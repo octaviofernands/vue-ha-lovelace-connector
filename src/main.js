@@ -1,68 +1,85 @@
 import { defineCustomElement } from 'vue';
-import MyApp from './App.vue';
-
-if (!customElements.get('vue-custom-card-ce')) {
-    const VueCustomElement = defineCustomElement(MyApp);
-    customElements.define('vue-custom-card-ce', VueCustomElement);
-}
+import * as components from './components/';
 
 class VueCustomCard extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.vueElement = null;
-        this.config = {};
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.vueElement = null;
+    this.config = {};
+    this.tag = this.nodeName.toLowerCase()
+  }
+
+  set hass(hass) {
+    console.log('SET HASS', this, hass)
+    if (this.vueElement) {
+      console.log('SET HASS 2', this, hass)
+      this.vueElement.hass = hass;
+    }
+  }
+
+  setConfig(config) {
+    console.log('1 CONFIG', this, config)
+    if (!config) {
+      return;
     }
 
-    set hass(hass) {
-        if (this.vueElement) {
-            this.vueElement.hass = hass;
-        }
+    this.config = config;
+    if (this.vueElement) {
+      console.log('3 has vueElement', this, this.vueElement)
+      this.vueElement = {
+        ...this.vueElement,
+        config: this.config
+      }
     }
+  }
 
-    setConfig(config) {
-        if (!config) {
-            return;
-        }
+  createVueApp() {
+    this.vueElement = document.createElement(`${this.tag}-ce`);
+    console.log('2', this.vueElement)
+    this.vueElement.config = this.config;
+    this.shadowRoot.appendChild(this.vueElement);
 
-        this.config = config;
-        if (this.vueElement) {
-            this.vueElement.config = this.config;
-        }
+  }
+
+  connectedCallback() {
+    if (!this.vueElement) {
+      this.createVueApp();
     }
+  }
 
-    createVueApp() {
-        this.vueElement = document.createElement('vue-custom-card-ce');
-        this.shadowRoot.appendChild(this.vueElement);
-        this.vueElement.config = this.config;
+  disconnectedCallback() {
+    if (this.vueElement) {
+      this.shadowRoot.removeChild(this.vueElement);
+      this.vueElement = null;
     }
-
-    connectedCallback() {
-        if (!this.vueElement) {
-            this.createVueApp();
-        }
-    }
-
-    disconnectedCallback() {
-        if (this.vueElement) {
-            this.shadowRoot.removeChild(this.vueElement);
-            this.vueElement = null;
-        }
-    }
+  }
 }
 
 
 window.customCards = window.customCards || [];
+let Component;
+Object.keys(components).forEach(key => {
+  Component = components[key];
+  if (!customElements.get(`${Component.name}-ce`)) {
+    const VueCustomElement = defineCustomElement(Component);
+    console.log('VueCustomElement', VueCustomElement)
+    customElements.define(`${Component.name}-ce`, VueCustomElement);
+  }
 
-if (!window.customCards.some(card => card.type === 'vue-custom-card')) {
+  if (!window.customCards.some(card => card.type === Component.name)) {
     window.customCards.push({
-        type: 'vue-custom-card',
-        name: 'Vue Custom Card',
-        preview: true,
-        description: 'A custom card created in Vue 3',
+      type: Component.name,
+      name: Component.friendlyName,
+      preview: true,
+      description: Component.description,
     });
-}
+  }
 
-if (!customElements.get('vue-custom-card')) {    
-    customElements.define('vue-custom-card', VueCustomCard);
-}
+  if (!customElements.get(Component.name)) {
+    customElements.define(Component.name, VueCustomCard);
+  }
+});
+
+
+
