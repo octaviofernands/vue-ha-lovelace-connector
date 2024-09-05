@@ -1,16 +1,131 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" href="/favicon.ico">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vite App</title>
+  <title>Home Assistant Demo</title>
+  <meta charset="utf-8">
+  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+  <link rel="icon" href="/static/icons/favicon.ico">
+  <link rel="modulepreload" href="/frontend_latest/main.OXSIc2FmDM4.js" crossorigin="use-credentials">
+  <link rel="mask-icon" href="/static/icons/mask-icon.svg" color="#03a9f4">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/favicon-apple-180x180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="msapplication-square70x70logo" content="/static/icons/tile-win-70x70.png">
+  <meta name="msapplication-square150x150logo" content="/static/icons/tile-win-150x150.png">
+  <meta name="msapplication-wide310x150logo" content="/static/icons/tile-win-310x150.png">
+  <meta name="msapplication-square310x310logo" content="/static/icons/tile-win-310x310.png">
+  <meta name="msapplication-TileColor" content="#03a9f4ff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="referrer" content="same-origin">
+  <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+  <meta name="theme-color" content="#03a9f4">
+  <meta property="fb:app_id" content="338291289691179">
+  <meta property="og:title" content="Home Assistant Demo">
+  <meta property="og:site_name" content="Home Assistant">
+  <meta property="og:url" content="https://demo.home-assistant.io/">
+  <meta property="og:type" content="website">
+  <meta property="og:description" content="Open source home automation that puts local control and privacy first.">
+  <meta property="og:image" content="https://www.home-assistant.io/images/default-social.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@home_assistant">
+  <meta name="twitter:title" content="Home Assistant">
+  <meta name="twitter:description" content="Open source home automation that puts local control and privacy first.">
+  <meta name="twitter:image" content="https://www.home-assistant.io/images/default-social.png">
+  <style>
+    html {
+      background-color: var(--primary-background-color, #fafafa);
+      color: var(--primary-text-color, #212121)
+    }
+
+    @media (prefers-color-scheme:dark) {
+      html {
+        background-color: var(--primary-background-color, #111);
+        color: var(--primary-text-color, #e1e1e1)
+      }
+    }
+
+    body {
+      font-family: Roboto, Noto, sans-serif;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-font-smoothing: antialiased;
+      font-weight: 400;
+      height: 100vh;
+      margin: 0;
+      padding: 0
+    }
+
+    #ha-launch-screen {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center
+    }
+
+    #ha-launch-screen svg {
+      width: 112px;
+      flex-shrink: 0
+    }
+
+    #ha-launch-screen .ha-launch-screen-spacer-top {
+      flex: 1;
+      margin-top: calc(2 * max(env(safe-area-inset-bottom), 48px) + 46px);
+      padding-top: 48px
+    }
+
+    #ha-launch-screen .ha-launch-screen-spacer-bottom {
+      flex: 1;
+      padding-top: 48px
+    }
+
+    .ohf-logo {
+      margin: max(env(safe-area-inset-bottom), 48px) 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: .66
+    }
+
+    @media (prefers-color-scheme:dark) {
+      .ohf-logo {
+        filter: invert(1)
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <div id="app"></div>
-  <x1c-printer-card></x1c-printer-card>
+  <ha-demo style="display: none;"></ha-demo>
+  <div id="app">
+    <appdev-display></appdev-display>
+  </div>
+  <script>
+    function _ls(d, e) {
+      var o = document.createElement("script");
+      return e && (o.crossOrigin = "use-credentials"), o.src = d, document.head.appendChild(o)
+    }
+    window.polymerSkipLoadingFontRoboto = !0, "customElements" in window && "content" in document.createElement(
+      "template") || _ls("/static/polyfills/webcomponents-bundle.js", !0);
+    var isModern =
+      /Edge?\/(1{2}[7-9]|1[2-9]\d|[2-9]\d{2}|\d{4,})\.\d+(\.\d+|)|Firefox\/(1{2}[5-9]|1[2-9]\d|[2-9]\d{2}|\d{4,})\.\d+(\.\d+|)|Chrom(ium|e)\/(109|1[1-9]\d|[2-9]\d{2}|\d{4,})\.\d+(\.\d+|)|(Maci|X1{2}).+ Version\/(17\.\d+|(1[89]|[2-9]\d|\d{3,})\.\d+)([,.]\d+|)( \(\w+\)|)( Mobile\/\w+|) Safari\/|Chrome.+OPR\/(10[3-9]|1[1-9]\d|[2-9]\d{2}|\d{4,})\.\d+\.\d+|(CPU[ +]OS|iPhone[ +]OS|CPU[ +]iPhone|CPU IPhone OS|CPU iPad OS)[ +]+(15[._]([6-9]|\d{2,})|(1[6-9]|[2-9]\d|\d{3,})[._]\d+)([._]\d+|)|Android:?[ /-](1{2}[7-9]|1[2-9]\d|[2-9]\d{2}|\d{4,})(\.\d+|)(\.\d+|)|Mobile Safari.+OPR\/([89]\d|\d{3,})\.\d+\.\d+|Android.+Firefox\/(1{2}[89]|1[2-9]\d|[2-9]\d{2}|\d{4,})\.\d+(\.\d+|)|Android.+Chrom(ium|e)\/(1{2}[7-9]|1[2-9]\d|[2-9]\d{2}|\d{4,})\.\d+(\.\d+|)|SamsungBrowser\/(2[3-9]|[3-9]\d|\d{3,})\.\d+|Home As{2}istant\/[\d.]+ \(.+; macOS (1[2-9]|[2-9]\d|\d{3,})\.\d+(\.\d+)?\)/
+      .test(navigator.userAgent) && "findLast" in Array.prototype
+  </script>
+  <script>
+    if (-1 === navigator.userAgent.indexOf("Android") && -1 === navigator.userAgent.indexOf("CrOS")) {
+      function _pf(o, t) {
+        var n = document.createElement("link");
+        n.rel = "preload", n.as = "font", n.type = "font/woff2", n.href = o, n.crossOrigin = "anonymous", document.head
+          .appendChild(n)
+      }
+      _pf("/static/fonts/roboto/Roboto-Regular.woff2"), _pf("/static/fonts/roboto/Roboto-Medium.woff2")
+    }
+  </script>
+  <script crossorigin="use-credentials">
+    isModern && (import("/frontend_latest/main.OXSIc2FmDM4.js"), window.latestJS = !0)
+  </script>
+  <script>
+    window.latestJS || _ls("/frontend_es5/main.EZQtrGg9DA8.js", !0)
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 

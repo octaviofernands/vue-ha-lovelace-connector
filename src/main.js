@@ -1,5 +1,8 @@
 import { defineCustomElement } from 'vue';
 import * as components from './components/';
+import * as utils from './utils/';
+import AppdevDisplay from './Display.ce.vue';
+
 
 class VueCustomCard extends HTMLElement {
   constructor() {
@@ -10,23 +13,21 @@ class VueCustomCard extends HTMLElement {
     this.tag = this.nodeName.toLowerCase()
   }
 
+
   set hass(hass) {
-    console.log('SET HASS', this, hass)
+    console.log('SET HASS', hass);
     if (this.vueElement) {
-      console.log('SET HASS 2', this, hass)
       this.vueElement.hass = hass;
     }
   }
 
   setConfig(config) {
-    console.log('1 CONFIG', this, config)
     if (!config) {
       return;
     }
 
     this.config = config;
     if (this.vueElement) {
-      console.log('3 has vueElement', this, this.vueElement)
       this.vueElement = {
         ...this.vueElement,
         config: this.config
@@ -36,7 +37,6 @@ class VueCustomCard extends HTMLElement {
 
   createVueApp() {
     this.vueElement = document.createElement(`${this.tag}-ce`);
-    console.log('2', this.vueElement)
     this.vueElement.config = this.config;
     this.shadowRoot.appendChild(this.vueElement);
 
@@ -58,12 +58,12 @@ class VueCustomCard extends HTMLElement {
 
 
 window.customCards = window.customCards || [];
-let Component;
-Object.keys(components).forEach(key => {
-  Component = components[key];
+const registerComponent = (Component) => {
+  let VueCustomElement;
+  let VueCustomClass;
+
   if (!customElements.get(`${Component.name}-ce`)) {
-    const VueCustomElement = defineCustomElement(Component);
-    console.log('VueCustomElement', VueCustomElement)
+    VueCustomElement = defineCustomElement(Component);
     customElements.define(`${Component.name}-ce`, VueCustomElement);
   }
 
@@ -77,9 +77,36 @@ Object.keys(components).forEach(key => {
   }
 
   if (!customElements.get(Component.name)) {
-    customElements.define(Component.name, VueCustomCard);
+    VueCustomClass = class extends VueCustomCard { }
+    customElements.define(Component.name, VueCustomClass);
   }
+}
+
+const registerUtil = (Util) => {
+  let VueCustomElement = defineCustomElement(Util);
+  customElements.define(Util.name, VueCustomElement);
+
+  return customElements.whenDefined(Util.name)
+    .then((res) => {
+      console.log(`Util.name ${Util.name} defined`);
+      return res
+    })
+}
+
+let Util;
+let Component;
+
+Object.keys(utils).forEach(async key => {
+  Util = utils[key];
+  registerUtil(Util)
 });
 
+Object.keys(components).forEach(async key => {
+  Component = components[key];
+  registerComponent(Component)
+});
 
+if (process.env.NODE_ENV === 'development') {
+  registerComponent(AppdevDisplay);
+}
 

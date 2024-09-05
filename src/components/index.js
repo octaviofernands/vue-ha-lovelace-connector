@@ -1,6 +1,5 @@
-import X1CPrinterCard from './x1c-printer-card.vue';
+import X1CPrinterCard from './X1CPrinterCard.ce.vue';
+
 export {
   X1CPrinterCard
 }
-
-// export const X1CPrinterCard = await import('./x1c-printer-card.vue');
