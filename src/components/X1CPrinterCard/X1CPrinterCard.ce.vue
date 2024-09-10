@@ -1,5 +1,5 @@
 <script setup>
-  import { defineProps, watch, ref, computed } from 'vue';
+  import { defineProps, defineModel, watch, ref, computed } from 'vue';
   import {
     mdiPrinter3dNozzle,
     mdiThermometer,
@@ -13,74 +13,15 @@
     mdiTooltipTextOutline,
     mdiLightbulb,
     mdiLightbulbOff,
-    mdiWifi
+    mdiWifi,
+    mdiPlay,
+    mdiPause,
+    mdiStop,
+    mdiHelp,
+    mdiCircle
   } from '@mdi/js';
-
-//   function getActionName(actionId) {
-//     switch (actionId) {
-//         case 0:
-//             return " ";  // idle or printing
-//         case 1:
-//             return "Auto bed leveling";
-//         case 2:
-//             return "Heatbed preheating";
-//         case 3:
-//             return "Sweeping XY mech mode";
-//         case 4:
-//             return "Changing filament";
-//         case 5:
-//             return "M400 pause";
-//         case 6:
-//             return "Paused due to filament runout";
-//         case 7:
-//             return "Heating hotend";
-//         case 8:
-//             return "Calibrating extrusion";
-//         case 9:
-//             return "Scanning bed surface";
-//         case 10:
-//             return "Inspecting first layer";
-//         case 11:
-//             return "Identifying build plate type";
-//         case 12:
-//             return "Calibrating Micro Lidar";
-//         case 13:
-//             return "Homing toolhead";
-//         case 14:
-//             return "Cleaning nozzle tip";
-//         case 15:
-//             return "Checking extruder temperature";
-//         case 16:
-//             return "Printing was paused by the user";
-//         case 17:
-//             return "Pause of front cover falling";
-//         case 18:
-//             return "Calibrating the micro lida";
-//         case 19:
-//             return "Calibrating extrusion flow";
-//         case 20:
-//             return "Paused due to nozzle temperature malfunction";
-//         case 21:
-//             return "Paused due to heat bed temperature malfunction";
-//         default:
-//             return actionId.toString()
-//     }
-// }
-
-  const CONN_STATUSES = {
-    connected: {
-      text: "Connected",
-      color: "--success-color"
-    },
-    connecting: {
-      text: "Trying to connect",
-      color: "--warning-color"
-    },
-    disconnected: {
-      text: "Disconnected",
-      color: "--error-color"
-    }
-  };
+  import { CONN_STATUSES, FANS, SPEED_PROFILE, HMS_ERRORS, PRINT_ERROR_ERRORS } from './bambu-constants'
+  import { parseMQTTCoolingPercentage, getFanSpeedGCode } from './util'
 
   const props = defineProps({
     config: Object,
@@ -93,6 +34,7 @@
     aux: 0,
     chamber: 0
   });
+  const speedProfile = defineModel(2);
 
   const isConnected = computed(() => {
 
@@ -114,9 +56,11 @@
   })
 
   const isPrinting = computed(() => {
-    const printingStatuses = ['RUNNING', 'FAILED', 'COMPLETED'];
+    // const printingStatuses = ['RUNNING', 'FAILED', 'COMPLETED'];
 
-    return printingStatuses.includes(attributes.value.status)
+    // return printingStatuses.includes(attributes.value.gcode_state)
+
+    return attributes.value.gcode_state && attributes.value.gcode_state === 'RUNNING';
 
   });
 
@@ -141,6 +85,41 @@
     }
   })
 
+  const pauseResumePrintingStyle = computed(() => {
+    return {
+
+    }
+  })
+
+  const activeAMS = computed(() => {
+    const trayNow = parseInt(attributes.value.ams.tray_now);
+    if(trayNow === 254) {
+      return -1;
+    }
+    const ams = Math.floor(trayNow / 4);
+    const tray = trayNow % 4;
+    // const ams = attributes.value.ams.ams[trayNow]
+    // self.ams.data[math.floor(self.ams.tray_now / 4)]
+    return {
+      ams,
+      tray
+    };
+  })
+
+  const printErrors = computed(() => {
+    if(!attributes.value.hms || !Array.isArray(attributes.value.hms))
+      return [];
+
+
+    let code;
+    return attributes.value.hms.map((item) => {
+      code = getHMSError(item);
+      return {
+        code,
+        description: HMS_ERRORS[code]
+      }
+    })
+  })
 
 
   const getHumidityColor = (humLevel) => {
@@ -211,35 +190,7 @@
     })
   }
 
-  const parseMQTTCoolingPercentage = (value) => {
-    const percentage = Math.ceil(value * 100 / 15);
-    const roundPercentage = Math.round(percentage/10) * 10;
 
-    return roundPercentage;
-  }
-
-  const coolingPercentageToGCodeSpeed = (value) => {
-    let percentage = Math.round(value / 10) * 10
-    let speed = Math.ceil(255 * percentage / 100)
-
-    if(speed > 255) speed = 255;
-    if(speed < 0) speed = 0;
-
-    return speed;
-  }
-
-  const FANS = {
-    part: 'P1',
-    aux: 'P2',
-    chamber: 'P3'
-  }
-
-  const getFanSpeedGCode = (fanID, percentage) => {
-    const speed = coolingPercentageToGCodeSpeed(percentage);
-    const gcode = `M106 ${fanID} S${speed}\n`;
-
-    return gcode
-  }
 
   const changeFan = (which, value) => {
     if(!FANS[which]) {
@@ -274,6 +225,68 @@
     sendGCode(gcode);
   }
 
+  const printAction = (action) => {
+    if(!['pause', 'resume', 'stop'].includes(action)) {
+      throw new Error(`Action ${action} cant be used`);
+    }
+
+    const msg = {
+      print: {
+        sequence_id: '0',
+        command: action,
+        param: '', // Always empty
+      }
+    }
+
+    console.log('printAction', msg);
+
+    sendMessage(msg);
+  }
+
+  const setSpeedProfile = (value) => {
+    if(value == '4') {
+      return false;
+    }
+
+    const msg = {
+      print: {
+        sequence_id: '0',
+        command: 'print_speed',
+        param: value.toString() // Print speed level as a string
+                                // 1 = silent
+                                // 2 = standard
+                                // 3 = sport
+                                // 4 = ludicrous
+      }
+    }
+
+    console.log('setSpeedProfile', msg);
+
+    sendMessage(msg);
+  }
+
+  const AMSStyle = (ams) => {
+    return {
+      'ams-active': ams.id == activeAMS.value.ams
+    }
+  }
+
+  const trayStyle = (ams, tray) => {
+    return {
+      'tray-active': ams.id == activeAMS.value.ams && tray.id == activeAMS.value.tray
+    }
+  }
+
+  const getHMSError = (error) => {
+    const codeLength = 8;
+    const hex1 = error.attr.toString(16).padStart(codeLength, '0');
+    const hex2 = error.code.toString(16).padStart(codeLength, '0');
+
+    const hmsError = `${hex1.substring(0, 4)}_${hex1.substring(4)}_${hex2.substring(0, 4)}_${hex2.substring(4)}`;
+
+    return hmsError.toUpperCase();
+  }
+
   watch(() => props.hass, () => {
     if (props.hass) {
       const state = props.hass.states[props.config.entity];
@@ -285,6 +298,8 @@
         aux: parseMQTTCoolingPercentage(parseInt(state.attributes.big_fan1_speed)),
         chamber: parseMQTTCoolingPercentage(parseInt(state.attributes.big_fan2_speed))
       }
+
+      speedProfile.value = state.attributes.spd_lvl
     }
   }, {
     immediate: true
@@ -301,6 +316,11 @@
         <ha-svg-icon :path="mdiWifi"></ha-svg-icon>
       </a>
     </div>
+    <div
+      v-for="error in printErrors"
+      v-bind:key="error.code">
+    {{ error.code }}: {{ error.description }}
+    </div>
 
     <div v-if="isConnected">
     <ha-card>
@@ -308,9 +328,16 @@
         <h2 class="x1c-printer-card--title">Filament</h2>
         <div class="x1c-printer-card--filament">
           <template v-if="hasAMS">
-          <div class="x1c-printer-card--ams" v-for="(ams, index) in attributes.ams.ams" v-bind:key="`ams-${index}`">
+          <div
+            v-for="(ams, index) in attributes.ams.ams"
+            v-bind:key="`ams-${index}`"
+            class="x1c-printer-card--ams"
+            :class="AMSStyle(ams)">
             <div class="x1c-printer-card--header">
-              <h3 class="x1c-printer-card--title">AMS {{ index+1 }}</h3>
+              <h3 class="x1c-printer-card--title">
+                AMS {{ index+1 }}
+                <ha-svg-icon class="ams-active-indicator" :path="mdiCircle"></ha-svg-icon>
+              </h3>
               <a class="x1c-printer-card--header-prop" :title="`Temperature: ${ams.temp}°C`">
                 <ha-svg-icon :path="mdiThermometer"></ha-svg-icon>
                 {{ ams.temp }}°C
@@ -319,10 +346,19 @@
                 <ha-svg-icon :path="mdiWaterPercent"></ha-svg-icon>
               </a>
             </div>
-            <div class="x1c-printer-card--ams-slots">
-              <div class="x1c-printer-card--ams-slot" v-for="(tray, trayIndex) in ams.tray" v-bind:key="`ams-${index}_tray-${trayIndex}`">
-                <div class="x1c-printer-card--ams-slot-filament">{{ tray.tray_type }}</div>
-                <ha-svg-icon class="x1c-printer-card--ams-slot-icon" :path="mdiPrinter3dNozzle" :style="`color:#${tray.tray_color.substring(0, 6)};`"></ha-svg-icon>
+            <div class="x1c-printer-card--ams-trays">
+              <div
+                v-for="(tray, trayIndex) in ams.tray"
+                v-bind:key="`ams-${index}_tray-${trayIndex}`"
+                class="x1c-printer-card--ams-tray"
+                :class="trayStyle(ams, tray)">
+                <template v-if="tray.tray_type">
+                  <div class="x1c-printer-card--ams-tray-filament">{{ tray.tray_type }}</div>
+                  <ha-svg-icon class="x1c-printer-card--ams-tray-icon" :path="mdiPrinter3dNozzle" :style="`color:#${tray.tray_color.substring(0, 6)};`"></ha-svg-icon>
+                </template>
+                <template v-else>
+                  <ha-svg-icon class="x1c-printer-card--ams-tray-icon" :path="mdiHelp"></ha-svg-icon>
+                </template>
               </div>
             </div>
 
@@ -336,17 +372,41 @@
     <ha-card v-if="attributes.mc_percent">
       <div class="x1c-printer-card--content">
         <div class="x1c-printer-card--header">
-          <h3 class="x1c-printer-card--title">Print Progress</h3>
-          <a class="x1c-printer-card--header-prop" :title="`Progress: ${attributes.mc_percent}%`">
+          <h3 class="x1c-printer-card--title">{{ attributes.subtask_name }}</h3>
+          <a class="x1c-printer-card--header-prop" :title="`Print progress: ${attributes.mc_percent}%`">
             {{ attributes.mc_percent }}%
           </a>
         </div>
-        <custom-bar
-          min="0"
-          max="100"
-          :value="attributes.mc_percent"
-        >
-        </custom-bar>
+        <div class="printer-progress-control">
+          <div class="printer-progress-control--bar">
+            <custom-bar
+              min="0"
+              max="100"
+              :value="attributes.mc_percent"
+            >
+            </custom-bar>
+          </div>
+          <div class="printer-progress-control--button">
+            <ha-button @click="printAction(isPrinting ? 'pause' : 'resume')" :class="pauseResumePrintingStyle">
+              <ha-svg-icon :path="isPrinting ? mdiPause : mdiPlay"></ha-svg-icon>
+            </ha-button>
+          </div>
+          <div class="printer-progress-control--button">
+            <ha-button @click="printAction('stop')" class="printer-progress-control--button-stop" :disabled="!isPrinting">
+              <ha-svg-icon :path="mdiStop"></ha-svg-icon>
+            </ha-button>
+          </div>
+        </div>
+
+        <div class="printer-speed-control">
+          <custom-radio-group
+            :options="SPEED_PROFILE"
+            name="speed_profile"
+            :modelValue="speedProfile"
+            @update:modelValue="$event => setSpeedProfile($event.detail[0])"
+            ></custom-radio-group>
+        </div>
+
         <custom-entity-row
           title="Status"
           :value="attributes.gcode_state"
@@ -410,6 +470,26 @@
               ></custom-fan-control>
             Part
           </label>
+          <label class="x1c-printer-card--control">
+            <custom-fan-control
+              label="Aux"
+              :value="fans.aux"
+              @main-click="toggleFan('aux')"
+              @minus-click="changeFan('aux', -10)"
+              @plus-click="changeFan('aux', 10)"
+              ></custom-fan-control>
+            Aux
+          </label>
+          <label class="x1c-printer-card--control">
+            <custom-fan-control
+              label="Chamber"
+              :value="fans.chamber"
+              @main-click="toggleFan('chamber')"
+              @minus-click="changeFan('chamber', -10)"
+              @plus-click="changeFan('chamber', 10)"
+              ></custom-fan-control>
+            Chamber
+          </label>
         </div>
       </div>
     </ha-card>
@@ -437,6 +517,8 @@
 
     &--title {
       flex: 1;
+      display: flex;
+      align-items: center;
     }
 
     &--header-prop {
@@ -444,16 +526,57 @@
       margin-left: 8px;
     }
 
-    &--ams-slots {
+    @keyframes blink {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .ams-active-indicator {
+      // font-size: 30px;
+      width: 12px;
+      height: 12px;
+      fill: var(--ha-bar-background-color, var(--secondary-background-color));
+    }
+
+    &--ams {
+      &.ams-active {
+
+        .ams-active-indicator {
+          fill: var(--primary-color, #03a9f4);
+          transition: all 0.5s ease-in-out;
+          animation: blink normal 2s infinite ease-in-out;
+        }
+
+        .tray-active {
+          border: solid 4px var(--primary-color, #03a9f4);
+
+          ha-svg-icon {
+            // stroke: var(--primary-color, #03a9f4);
+            // stroke-width: 1px;
+            transform: scale(1.1);
+          }
+        }
+      }
+    }
+
+    &--ams-trays {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
     }
 
-    &--ams-slot {
-      background: #cccccc;
+    &--ams-tray {
+      background: var(--ha-bar-background-color, var(--secondary-background-color));
       margin: 0 8px;
-      padding: 8px 0;
+      padding: 16px 0;
       text-align: center;
+      border-radius: 8px;
 
       &-filament {
         font-weight: 700;
@@ -464,6 +587,8 @@
         width:50px;
         height: 50px;
       }
+
+
     }
 
     &--button {
@@ -490,31 +615,13 @@
     }
   }
 
-  .fan-control {
-    &--main-button {
-      ha-svg-icon {
-        fill:var(--secondary-text-color, #9b9b9b);
-      }
-    }
+  .printer-progress-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    &--active {
-      .fan-control--main-button {
-        ha-svg-icon {
-          fill: var(--primary-color, #03a9f4);
-        }
-      }
-    }
-
-    &--button-group {
-      display: flex;
-      width: 100%;
-      align-items: center;
-      justify-content: center;
-
-      span {
-        display: inline-block;
-        flex: 1;
-      }
+    &--bar {
+      flex: 1;
     }
   }
 </style>

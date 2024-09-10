@@ -46,14 +46,15 @@
   <div class="custom-bar">
     <svg> <g> <rect></rect> <rect :width="`${percentage}%`"></rect> </g> </svg>
   </div>
-
 </template>
+
 <style lang="scss">
-  .custom-bar {
+  :host {
     display: block;
+    width: 100%;
+  }
 
-
-
+  .custom-bar {
     svg {
       height: 12px;
       border-radius: 4px;

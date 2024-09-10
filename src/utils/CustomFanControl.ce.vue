@@ -21,17 +21,17 @@
 
 <template>
   <div class="custom-fan-control" :class="fanStyle">
-    <ha-button @click="$emit('main-click')" class="custom-fan-control--main-button">
+    <ha-button @click="$emit('main-click')" class="custom-fan-control--main-button" :title="`Toggle ${props.label} fan on/off`">
       <ha-svg-icon :path="mdiFan"></ha-svg-icon>
     </ha-button>
     <div class="custom-fan-control--button-group">
-      <ha-button @click="$emit('minus-click')" :disabled="props.value === 0">
+      <ha-button @click="$emit('minus-click')" :disabled="props.value === 0" :title="`${props.label} fan -10%`">
         <ha-svg-icon :path="mdiMinusThick"></ha-svg-icon>
       </ha-button>
       <span>
         {{ props.value }}%
       </span>
-      <ha-button @click="$emit('plus-click')" :disabled="props.value === 100">
+      <ha-button @click="$emit('plus-click')" :disabled="props.value === 100" :title="`${props.label} fan +10%`">
         <ha-svg-icon :path="mdiPlusThick"></ha-svg-icon>
       </ha-button>
     </div>

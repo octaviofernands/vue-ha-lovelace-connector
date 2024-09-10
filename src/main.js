@@ -84,6 +84,7 @@ const registerComponent = (Component) => {
 
 const registerUtil = (Util) => {
   let VueCustomElement = defineCustomElement(Util);
+
   customElements.define(Util.name, VueCustomElement);
 
   return customElements.whenDefined(Util.name)
