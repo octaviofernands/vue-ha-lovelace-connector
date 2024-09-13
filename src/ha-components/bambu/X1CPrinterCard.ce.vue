@@ -1,9 +1,6 @@
 <script setup>
-  import { defineProps, defineModel, watch, ref, computed } from 'vue';
+  import { defineProps, defineModel, watch, ref, computed, toRefs } from 'vue';
   import {
-    mdiPrinter3dNozzle,
-    mdiThermometer,
-    mdiWaterPercent,
     mdiThermometerLines,
     mdiPrinter3dNozzleHeat,
     mdiHomeThermometerOutline,
@@ -17,16 +14,35 @@
     mdiPlay,
     mdiPause,
     mdiStop,
-    mdiHelp,
-    mdiCircle
   } from '@mdi/js';
-  import { CONN_STATUSES, FANS, SPEED_PROFILE, HMS_ERRORS, PRINT_ERROR_ERRORS } from './bambu-constants'
-  import { parseMQTTCoolingPercentage, getFanSpeedGCode } from './util'
+  import {
+    CONN_STATUSES,
+    FANS,
+    SPEED_PROFILE,
+    HMS_ERRORS,
+    HMS_MODULES,
+    HMS_SEVERITY_LEVELS,
+    PRINT_ERROR_ERRORS,
+    HMS_AMS_ERRORS
+  } from '../../bambu-constants';
+  import { parseMQTTCoolingPercentage, getFanSpeedGCode } from '../../util';
+  // import AMSCard from './AMSCard.ce.vue';
 
-  const props = defineProps({
-    config: Object,
-    hass: Object
-  })
+  // const props = defineProps({
+  //   // config: Object,
+  //   // hass: Object
+  // })
+
+
+
+  const props = defineProps(['hass', 'config'])
+
+  const {hass, config} = toRefs(props);
+
+
+
+
+  console.log('START hass', hass, config)
 
   const attributes = ref({});
   const fans = ref({
@@ -62,12 +78,6 @@
 
     return attributes.value.gcode_state && attributes.value.gcode_state === 'RUNNING';
 
-  });
-
-  const hasAMS = computed(() => {
-    return attributes.value.ams
-      && Array.isArray(attributes.value.ams.ams)
-      && attributes.value.ams.ams.length > 0;
   });
 
   const layerProgress = computed(() => {
@@ -112,29 +122,30 @@
 
 
     let code;
-    return attributes.value.hms.map((item) => {
+    const errorList = attributes.value.hms.map((item) => {
       code = getHMSError(item);
       return {
         code,
+        module: getHMSModule(item),
+        severity: getHMSSeverity(item),
+        link: getWikiLink(code),
         description: HMS_ERRORS[code]
       }
     })
+
+    if(attributes.value.print_error) {
+      code = getPrintError(attributes.value.print_error);
+
+      errorList.push({
+        code,
+        description: PRINT_ERROR_ERRORS[code] ? PRINT_ERROR_ERRORS[code] : 'unknown error'
+      })
+    }
+
+    console.log('errorList', errorList)
+
+    return errorList;
   })
-
-
-  const getHumidityColor = (humLevel) => {
-    humLevel = parseInt(humLevel);
-
-    if(humLevel > 3) {
-      return '--success-color';
-    }
-
-    if(humLevel === 3) {
-      return '--warning-color';
-    }
-
-    return '--error-color';
-  }
 
   const sendMessage = (payload) => {
     console.log('sendMessage', payload);
@@ -265,18 +276,6 @@
     sendMessage(msg);
   }
 
-  const AMSStyle = (ams) => {
-    return {
-      'ams-active': ams.id == activeAMS.value.ams
-    }
-  }
-
-  const trayStyle = (ams, tray) => {
-    return {
-      'tray-active': ams.id == activeAMS.value.ams && tray.id == activeAMS.value.tray
-    }
-  }
-
   const getHMSError = (error) => {
     const codeLength = 8;
     const hex1 = error.attr.toString(16).padStart(codeLength, '0');
@@ -287,12 +286,61 @@
     return hmsError.toUpperCase();
   }
 
-  watch(() => props.hass, () => {
-    if (props.hass) {
-      const state = props.hass.states[props.config.entity];
+  const getPrintError = (error) => {
+    const codeLength = 8;
+    const hex = error.toString(16).padStart(codeLength, '0');
+
+    const printError = `${hex.substring(0, 4)}_${hex.substring(4)}`;
+
+    return printError.toUpperCase();
+  }
+
+  const getHMSModule = (hms) => {
+    const HMSModule = (hms.attr >> 24) & 0xFF;
+
+    return HMS_MODULES[HMSModule];
+  }
+
+  const getHMSSeverity = (hms) => {
+    const uintCode = hms.code >> 16
+
+    if(hms.code > 0 && HMS_SEVERITY_LEVELS[uintCode])
+        return HMS_SEVERITY_LEVELS[uintCode]
+
+    return HMS_SEVERITY_LEVELS["default"]
+  }
+
+  const getWikiLink = (code) => {
+    const code1 = parseInt(code.substring(0, 4), 16);
+    const code2 = parseInt(code.substring(5, 9), 16);
+    const code3 = parseInt(code.substring(10, 14), 16);
+    const code4 = parseInt(code.substring(15, 19), 16);
+
+    let parsedCode;
+    // 070X_xYxx_xxxx_xxxx = AMS X (0 based index) Slot Y (0 based index) has the error
+    if(code.startsWith('070')) {
+      parsedCode = `${(code1 & 0xFFF8).toString(16).padStart(4, '0').toUpperCase()}_${(code2 & 0xF8FF).toString(16).padStart(4, '0').toUpperCase()}_${code3.toString(16).padStart(4, '0').toUpperCase()}_${code4.toString(16).padStart(4, '0').toUpperCase()}`;
+    } else {
+      parsedCode = `${code1.toString(16).padStart(4, '0').toUpperCase()}_${code2.toString(16).padStart(4, '0').toUpperCase()}_${code3.toString(16).padStart(4, '0').toUpperCase()}_${code4.toString(16).padStart(4, '0').toUpperCase()}`;
+    }
+
+    const AMSCode = `${(code1 & 0xFFF8).toString(16).padStart(4, '0').toUpperCase()}_${(code2 & 0xF8FF).toString(16).padStart(4, '0').toUpperCase()}_${code3.toString(16).padStart(4, '0').toUpperCase()}_${code4.toString(16).padStart(4, '0').toUpperCase()}`;
+    const ams_error = HMS_AMS_ERRORS[AMSCode] || "";
+    if (ams_error !== "") {
+      return AMSCode;
+    }
+
+    return `https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/${parsedCode}`;
+  }
+
+  watch([hass, config], ([newHass, newConfig]) => {
+    if (newHass && newHass.states && newConfig && newConfig.entity) {
+      console.log('WATCH hass', newHass)
+      console.log('WATCH config', newConfig)
+      const state = newHass.states[newConfig.entity];
 
       attributes.value = state.attributes;
-      console.log('WATCH attrs', state.attributes)
+
       fans.value = {
         part: parseMQTTCoolingPercentage(parseInt(state.attributes.cooling_fan_speed)),
         aux: parseMQTTCoolingPercentage(parseInt(state.attributes.big_fan1_speed)),
@@ -304,26 +352,27 @@
   }, {
     immediate: true
   });
-
-  console.log('hass', props.hass)
 </script>
 
 <template>
   <div class="x1c-printer-card">
+    <ha-alert
+      v-for="error in printErrors"
+      v-bind:key="error.code"
+      alert-type="error"
+      >
+      <strong>{{ error.code }}</strong>: {{ error.description }} <a v-if="error.link" :href="error.link" target="_blank">(link)</a>
+    </ha-alert>
     <div class="x1c-printer-card--header">
       <h1 class="x1c-printer-card--title">{{ attributes.friendly_name }}</h1>
       <a class="x1c-printer-card--header-prop" :style="`color: var(${connData.color})`" :title="connData.text">
         <ha-svg-icon :path="mdiWifi"></ha-svg-icon>
       </a>
     </div>
-    <div
-      v-for="error in printErrors"
-      v-bind:key="error.code">
-    {{ error.code }}: {{ error.description }}
-    </div>
 
     <div v-if="isConnected">
-    <ha-card>
+    <ams-card :hass="hass" :config="config" title="Filament"></ams-card>
+    <!-- <ha-card>
       <div class="x1c-printer-card--content">
         <h2 class="x1c-printer-card--title">Filament</h2>
         <div class="x1c-printer-card--filament">
@@ -368,7 +417,7 @@
 
 
       </div>
-    </ha-card>
+    </ha-card> -->
     <ha-card v-if="attributes.mc_percent">
       <div class="x1c-printer-card--content">
         <div class="x1c-printer-card--header">
@@ -501,13 +550,17 @@
   .x1c-printer-card {
     display: block;
 
+    ha-alert {
+      display: block;
+      margin: 4px 0;
+    }
 
     &--content {
       padding: 8px;
     }
 
     ha-card {
-      margin: 4px 0;
+      margin: 4px 0 8px 0;
     }
 
     &--header {
@@ -605,6 +658,10 @@
 
     &--controls {
       display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      margin-top: -24px;
     }
 
     &--control {
@@ -612,6 +669,8 @@
       flex-direction: column;
       text-align: center;
       cursor: pointer;
+      flex: 1;
+      margin-top: 24px;
     }
   }
 

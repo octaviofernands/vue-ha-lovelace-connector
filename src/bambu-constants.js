@@ -1294,7 +1294,6 @@ export const PRINT_ERROR_ERRORS = {
 }
 
 export const HMS_SEVERITY_LEVELS = {
-  "default": "unknown",
   1: "fatal",
   2: "serious",
   3: "common",
@@ -1320,4 +1319,12 @@ export const FANS = {
   part: 'P1',
   aux: 'P2',
   chamber: 'P3'
+}
+
+export const HMS_MODULES = {
+  0x05: "mainboard",
+  0x0C: "xcam",
+  0x07: "ams",
+  0x08: "toolhead",
+  0x03: "mc"
 }

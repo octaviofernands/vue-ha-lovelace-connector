@@ -1,4 +1,4 @@
-import { defineCustomElement, h } from 'vue';
+import { defineCustomElement } from 'vue';
 import * as HAcomponents from './ha-components/';
 import * as internalComponents from './internal-components';
 import AppdevDisplay from './Display.ce.vue';
@@ -47,11 +47,6 @@ class VueCustomCard extends HTMLElement {
   }
 
   createVueApp() {
-    // if(this.component) {
-    //   console.log('this.component', this.component)
-    //   const VueCustomElement = defineCustomElement(this.component);
-    //   console.log('VueCustomElement', VueCustomElement)
-    // }
     this.vueElement = document.createElement(`${this.tag}-ce`);
     this.vueElement.config = this.config;
     this.shadowRoot.appendChild(this.vueElement);
@@ -71,18 +66,7 @@ class VueCustomCard extends HTMLElement {
     }
   }
 }
-const createElementInstance = ({ component = null, props = [], methods = {}, renderOptions = {} } = {}) => {
-  return class extends defineCustomElement({
-    props: props,
-    setup(props) {
-      return () => h(component, props)
-    }
-  }) {
-      setConfig(value) {
-        this.config = value
-      }
-    };
-}
+
 
 window.customCards = window.customCards || [];
 const registerHAComponent = (Component) => {
@@ -90,11 +74,11 @@ const registerHAComponent = (Component) => {
   let VueCustomClass;
 
 
-  // if (!customElements.get(`${Component.name}-ce`)) {
-  //   VueCustomElement = defineCustomElement(Component);
-  //   console.log('VueCustomElement', VueCustomElement)
-  //   customElements.define(`${Component.name}-ce`, VueCustomElement);
-  // }
+  if (!customElements.get(`${Component.name}-ce`)) {
+    VueCustomElement = defineCustomElement(Component);
+    console.log('VueCustomElement', VueCustomElement)
+    customElements.define(`${Component.name}-ce`, VueCustomElement);
+  }
 
   if (!window.customCards.some(card => card.type === Component.name)) {
     window.customCards.push({
@@ -106,17 +90,10 @@ const registerHAComponent = (Component) => {
   }
 
   if (!customElements.get(Component.name)) {
-
-    VueCustomClass = createElementInstance({
-      component: Component,
-      props:['hass', 'config']
-    })
-
+    VueCustomClass = class extends VueCustomCard {  }
     customElements.define(Component.name, VueCustomClass);
   }
 }
-
-
 
 const registerInternalComponent = (InternalComponent) => {
   let VueCustomElement = defineCustomElement(InternalComponent);
