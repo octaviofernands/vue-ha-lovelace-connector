@@ -1,7 +1,3 @@
-
-body {
-  background: #ccc;
-}
 .custom-card {
   display: block;
   margin: 4px 0 8px 0;
@@ -13,8 +9,6 @@ body {
   &__content {
     padding: 8px;
   }
-
-
 
   &__header {
     display: flex;
@@ -30,5 +24,35 @@ body {
   &__header-prop {
     display: inline-block;
     margin-left: 8px;
+  }
+
+  &__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    margin-top: -24px;
+  }
+
+  &__control {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    cursor: pointer;
+    flex: 1;
+    margin-top: 24px;
+  }
+}
+
+.custom-switch-button {
+  ha-svg-icon {
+    fill: var(--secondary-text-color, #9b9b9b);
+  }
+
+  &--active {
+    color: var(--primary-color, #03a9f4);
+    ha-svg-icon {
+      fill: var(--primary-color, #03a9f4);
+    }
   }
 }

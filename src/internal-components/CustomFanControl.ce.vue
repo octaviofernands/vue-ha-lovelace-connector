@@ -13,18 +13,18 @@
 
   const fanStyle = computed(() => {
     return {
-      'custom-fan-control--active': props.value > 0
+      'custom-switch-button--active': props.value > 0
     }
   })
 
 </script>
 
 <template>
-  <div class="custom-fan-control" :class="fanStyle">
-    <ha-button @click="$emit('main-click')" class="custom-fan-control--main-button" :title="`Toggle ${props.label} fan on/off`">
+  <div class="custom-fan-control">
+    <ha-button @click="$emit('main-click')" class="custom-switch-button" :class="fanStyle" :title="`Toggle ${props.label} fan on/off`">
       <ha-svg-icon :path="mdiFan"></ha-svg-icon>
     </ha-button>
-    <div class="custom-fan-control--button-group">
+    <div class="custom-fan-control__button-group">
       <ha-button @click="$emit('minus-click')" :disabled="props.value === 0" :title="`${props.label} fan -10%`">
         <ha-svg-icon :path="mdiMinusThick"></ha-svg-icon>
       </ha-button>
@@ -38,22 +38,9 @@
   </div>
 </template>
 <style lang="scss">
+  @import url('@/main.scss');
   .custom-fan-control {
-    &--main-button {
-      ha-svg-icon {
-        fill:var(--secondary-text-color, #9b9b9b);
-      }
-    }
-
-    &--active {
-      .custom-fan-control--main-button {
-        ha-svg-icon {
-          fill: var(--primary-color, #03a9f4);
-        }
-      }
-    }
-
-    &--button-group {
+    &__button-group {
       display: flex;
       width: 100%;
       align-items: center;

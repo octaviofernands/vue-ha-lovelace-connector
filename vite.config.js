@@ -7,6 +7,8 @@ import vue from '@vitejs/plugin-vue';
 const customElements = [
   'x1c-printer-card',
   'ams-card',
+  'print-status-card',
+  'printer-info-card',
 ]
 export default defineConfig({
 
