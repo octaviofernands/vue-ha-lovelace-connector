@@ -22,7 +22,7 @@ export const getFanSpeedGCode = (fanID, percentage) => {
   return gcode
 }
 
-export const sendMQTTMessage = async (payload, hass, {input_topic = import.meta.env.VITE_X1C_INPUT_TOPIC}) => {
+export const sendMQTTMessage = async (payload, hass, {input_topic = import.meta.env.VITE_X1C_INPUT_TOPIC} = {}) => {
   console.log('sendMessage', payload);
   const domain = 'mqtt';
   const service = 'publish';

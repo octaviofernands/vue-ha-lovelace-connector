@@ -23,26 +23,32 @@
 </script>
 
 <template>
-  <ha-card class="custom-card printer-info-card">
-    <div class="custom-card__content">
+  <ha-card class="custom-card printer-controls-card">
+    <div class="custom-card__content printer-controls-card__content">
+      <div class="printer-controls-card__column">
+        a
+      </div>
+      <div class="printer-controls-card__column">
+        b
+      </div>
       <custom-entity-row
         title="Bed Temperature"
         :value="`${attrs.bed_temper} / ${attrs.bed_target_temper}`"
         suffix="°C"
         :icon="mdiThermometerLines"
-        ></custom-entity-row>
+      />
       <custom-entity-row
         title="Nozzle Temperature"
         :value="`${attrs.nozzle_temper} / ${attrs.nozzle_target_temper}`"
         suffix="°C"
         :icon="mdiPrinter3dNozzleHeat"
-        ></custom-entity-row>
-        <custom-entity-row
+      />
+      <custom-entity-row
         title="Chamber Temperature"
         :value="attrs.chamber_temper"
         suffix="°C"
         :icon="mdiHomeThermometerOutline"
-        ></custom-entity-row>
+      />
     </div>
   </ha-card>
 </template>
@@ -53,9 +59,9 @@
 
 <script>
 export default {
-  name: 'printer-info-card',
-  friendlyName: 'Printer Info Card',
-  description: 'Show printer data',
+  name: 'printer-controls-card',
+  friendlyName: 'Printer controls Card',
+  description: 'Show printer actions and controls',
 }
 
 </script>

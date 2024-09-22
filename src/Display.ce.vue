@@ -1,5 +1,5 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, onUnmounted } from 'vue';
 
   const mockProps = ref({});
   if (process.env.NODE_ENV === 'development') {
@@ -68,19 +68,24 @@
       }
     }
   }
-
+  let interval;
   const simulateHass = () => {
-    const interval = setInterval(() => {
+    interval = setInterval(() => {
       provideHass();
     }, 1000)
   }
+
+  onUnmounted(() => {
+    clearInterval(interval);
+  })
+
   provideHass();
   simulateHass();
 </script>
 <template>
   <!-- <ams-card></ams-card> -->
 
-  <x1c-printer-card></x1c-printer-card>
+  <x1c-printer-card />
 </template>
 
 <script>

@@ -9,6 +9,7 @@ const customElements = [
   'ams-card',
   'print-status-card',
   'printer-info-card',
+  'custom-bff-provider',
 ]
 export default defineConfig({
 

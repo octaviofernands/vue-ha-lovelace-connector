@@ -12,30 +12,29 @@
   import {
     SPEED_PROFILE,
   } from '../../bambu-constants';
-
   import { bambuPrintAction, bambuSetSpeedProfile } from '../../util'
 
 
   const props = defineProps({
-    parentattrs: Object
+    parentAttrs: Object
   })
 
-  const emit = defineEmits(['updatePrintAction', 'updateSpeedProfile'])
+  const emit = defineEmits(['update:Print-Action', 'update:Speed-Profile'])
 
 
   const attributes = inject('attributes');
   const hass = inject('hass');
 
   const attrs = computed(() => {
-    if(props.parentattrs) {
-      return props.parentattrs;
+    if(props.parentAttrs) {
+      return props.parentAttrs;
     }
 
     return attributes.value ? attributes.value : null
   })
 
   const isChild = computed(()=>{
-    return !!props.parentattrs
+    return !!props.parentAttrs
   })
 
   const layerProgress = computed(() => {
@@ -68,7 +67,7 @@
 
   const printActionUpdate = (action)=>{
     if(isChild.value) {
-      emit('updatePrintAction', action);
+      emit('update:Print-Action', action);
       return;
     }
 
@@ -78,7 +77,7 @@
 
   const speedProfileUpdate = (speedProfile) => {
     if(isChild.value) {
-      emit('updateSpeedProfile', speedProfile);
+      emit('update:Speed-Profile', speedProfile);
       return;
     }
 
